@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#101722" />
+  <meta name="description" content="A polished, client-side Minecraft world explorer for NBT, players, regions, and points of interest." />
+  <title>Minecraft World Viewer</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%2212%22 fill=%22%2326c281%22/><path d=%22M12 18h40v12H12zm0 16h17v12H12zm23 0h17v12H35z%22 fill=%22%230b111a%22/></svg>" />
+  <link rel="stylesheet" href="src/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-mark">MW</div>
+        <div>
+          <div class="brand-title">Minecraft World Viewer</div>
+          <div class="brand-subtitle">Explore worlds, players, NBT, regions, and POIs in your browser.</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <label class="button primary">
+          <input id="worldInput" type="file" webkitdirectory directory multiple hidden />
+          Open world folder
+        </label>
+        <label class="button ghost">
+          <input id="fileInput" type="file" multiple hidden accept=".mca,.dat,.nbt,.json,.txt" />
+          Add files
+        </label>
+        <button id="resetView" class="icon-button" title="Reset map view" aria-label="Reset map view">⌂</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar left-panel">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">EXPLORER</div>
+            <h2 id="worldName">No world loaded</h2>
+          </div>
+          <span id="loadBadge" class="status-dot offline">● offline</span>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card"><span>Chunks</span><strong id="chunkCount">0</strong></div>
+          <div class="stat-card"><span>Regions</span><strong id="regionCount">0</strong></div>
+          <div class="stat-card"><span>Players</span><strong id="playerCount">0</strong></div>
+          <div class="stat-card"><span>POIs</span><strong id="poiCount">0</strong></div>
+        </div>
+
+        <nav class="tabbar" aria-label="Viewer sections">
+          <button class="tab active" data-tab="world">World</button>
+          <button class="tab" data-tab="players">Players</button>
+          <button class="tab" data-tab="pois">POIs</button>
+        </nav>
+
+        <section id="worldTab" class="tab-panel active">
+          <div class="panel-row"><span class="label">Dimension</span><strong id="dimensionValue">—</strong></div>
+          <div class="panel-row"><span class="label">Data version</span><strong id="dataVersion">—</strong></div>
+          <div class="panel-row"><span class="label">Spawn</span><strong id="spawnValue">—</strong></div>
+          <div class="panel-row"><span class="label">World border</span><strong id="borderValue">—</strong></div>
+          <div class="subheading">Regions</div>
+          <div id="regionList" class="stack-list empty-state">Load a world folder to see region activity.</div>
+        </section>
+
+        <section id="playersTab" class="tab-panel">
+          <div class="search-wrap"><span>⌕</span><input id="playerSearch" type="search" placeholder="Search players or UUID" /></div>
+          <div id="playerList" class="stack-list empty-state">No player data loaded.</div>
+        </section>
+
+        <section id="poisTab" class="tab-panel">
+          <div class="search-wrap"><span>⌕</span><input id="poiSearch" type="search" placeholder="Filter POI type or coordinate" /></div>
+          <div class="poi-filter-row">
+            <button class="filter-chip active" data-poi-filter="all">All</button>
+            <button class="filter-chip" data-poi-filter="village">Village</button>
+            <button class="filter-chip" data-poi-filter="portal">Portal</button>
+            <button class="filter-chip" data-poi-filter="structure">Structure</button>
+          </div>
+          <div id="poiList" class="stack-list empty-state">No POIs loaded.</div>
+        </section>
+      </aside>
+
+      <section class="map-panel">
+        <div class="map-toolbar">
+          <div class="map-title-wrap">
+            <div class="eyebrow">WORLD MAP</div>
+            <div class="map-title" id="mapTitle">Waiting for a world</div>
+          </div>
+          <div class="map-tools">
+            <div class="map-legend"><span class="legend-swatch terrain"></span>terrain <span class="legend-dot player"></span>players <span class="legend-dot poi"></span>POIs</div>
+            <button id="zoomOut" class="tool-button">−</button>
+            <button id="zoomIn" class="tool-button">+</button>
+          </div>
+        </div>
+        <div class="canvas-wrap" id="canvasWrap">
+          <canvas id="worldCanvas"></canvas>
+          <div id="mapEmpty" class="map-empty">
+            <div class="empty-glyph">◫</div>
+            <h3>Drop a Minecraft world here</h3>
+            <p>Use “Open world folder” and point it at the root of a Java Edition world.</p>
+            <div class="feature-pills"><span>NBT explorer</span><span>Terrain map</span><span>POI radar</span><span>Player tracker</span></div>
+          </div>
+          <div id="hoverCard" class="hover-card hidden"></div>
+        </div>
+        <div class="map-statusbar">
+          <div id="cursorCoords">Chunk — · Block —</div>
+          <div id="selectionText">Select a chunk, player, or POI to inspect details.</div>
+        </div>
+      </section>
+
+      <aside class="sidebar right-panel">
+        <div class="detail-header">
+          <div>
+            <div class="eyebrow">INSPECTOR</div>
+            <h2 id="detailTitle">Nothing selected</h2>
+          </div>
+          <button id="exportNbt" class="button ghost small" disabled>Export JSON</button>
+        </div>
+        <div id="detailMeta" class="detail-meta">Select a player, POI, or chunk to inspect its data.</div>
+        <div id="detailBody" class="detail-body empty-inspector">
+          <div class="inspector-art">◇</div>
+          <p>Rich, searchable NBT details appear here.</p>
+        </div>
+      </aside>
+    </main>
+
+    <div id="toast" class="toast hidden"></div>
+    <div id="dropZone" class="drop-zone hidden">Drop Minecraft files anywhere to load them</div>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
