@@ -1,0 +1,1 @@
+if(!DataView.prototype.getUintBE)DataView.prototype.getUintBE=function(o){return this.getUint32(o,false)};
